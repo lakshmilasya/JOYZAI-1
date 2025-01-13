@@ -1,0 +1,30 @@
+<section class = "file-uploader-section">
+  <span class="file-uploader-header">FILE UPLOADER</span>
+
+  <div class="upload-container" 
+     (dragover)="onDragOver($event)" 
+     (drop)="onDrop($event)">
+    <span class="material-symbols-outlined upload-icon">backup</span>
+    <div class="file-uploader-header">Drag and drop your files here</div>
+    <div class="divider">
+        <span>OR</span>
+    </div>
+    <button class="primary-button" (click)="fileInput.click()">Browse Files</button>
+     <input type="file" #fileInput (change)="onFileSelected($event)" style="display: none;" />
+  </div>
+
+  <div *ngIf="progress >= 0" class="progress-bar">
+    <div class="file-info">
+      <span>{{ fileName }}</span>
+      <div class="file-size-info-container">
+        <span>{{ uploadedSize }} / {{ totalSize }}</span>
+        <span class="material-symbols-outlined delete-icon" (click)="cancelUpload()">delete</span>
+      </div>
+    </div>
+    <div class="progress" [style.width.%]="progress"></div>
+  </div>
+</section>
+
+<div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+

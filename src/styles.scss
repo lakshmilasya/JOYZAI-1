@@ -1,1 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
+/* You can add global styles to this file, and also import other style files */
+@import 'src/style/_mixins.scss';
+@import 'src/style/_variables.scss';
+
+body{
+    margin: unset;
+}

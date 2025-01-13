@@ -1,0 +1,25 @@
+<section class="display-records-container">
+    <app-file-uploader (calculatedData)="displayRecords($event)"></app-file-uploader>
+    <div class="table-wrapper" *ngIf="headers">
+        <div class="header">Errors in organisational hierarchy</div>
+        <div *ngIf="isLoading" class="loading-state">
+            Loading...
+        </div>
+        <div *ngIf="!isLoading && isEmpty" class="empty-state">
+                <img src="../../../assets/no-records-found.svg" width='20%' height="'20%"/>
+                No errors found
+        </div>
+        <table class="table-container" *ngIf="!isLoading && !isEmpty">
+            <thead class="table-header">
+                <tr>
+                    <th *ngFor="let header of errorHeaders" class="header-cell">{{ header | keyTransform }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let error of errors" class="table-row">
+                    <td *ngFor="let header of errorHeaders" class="table-cell">{{ error[header] }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>

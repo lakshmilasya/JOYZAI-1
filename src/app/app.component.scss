@@ -1,0 +1,13 @@
+@import 'src/style/_mixins.scss';
+@import  'src/style/_variables.scss';
+
+.parent-section{
+    background-color: $background-color;
+    height : 100vh;
+}
+
+.file-uploader-header{
+    color: $primary-header
+}
+
+

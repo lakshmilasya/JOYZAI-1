@@ -1,0 +1,55 @@
+@import 'src/style/_mixins.scss';
+@import 'src/style/_variables.scss';
+
+.display-records-container {
+    padding: 1rem;
+    background-color: $background-color;
+}
+
+.table-container {
+    width: 100%;
+    background-color: $white;
+    border-collapse: collapse;
+    border-color: $primary-header;
+}
+
+.table-header {
+    color: $primary-header;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row {
+    border-bottom: 1px solid $rowborder;
+}
+
+.table-cell {
+    padding: 1rem;
+}
+
+
+.loading-state,
+.empty-state {
+    text-align: center;
+    padding: 1rem;
+    font-size: 1.2rem;
+    color: $primary-header; // Use your primary color variable
+    @include displayFlex(column, center, center)
+}
+
+.header {
+    font-size: 18px;
+    color: $primary-header; // Use your primary color variable
+    padding: 1rem 0rem;
+}
+
+.header-cell{
+    padding: 1rem
+}
+
+.table-wrapper {
+    padding: 1rem;
+    background-color: $white;
+}
