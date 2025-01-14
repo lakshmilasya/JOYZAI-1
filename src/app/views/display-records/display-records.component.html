@@ -1,6 +1,8 @@
 <section class="display-records-container">
-    <app-file-uploader (calculatedData)="displayRecords($event)"></app-file-uploader>
-    <div class="table-wrapper" *ngIf="headers">
+    <section class="landing-page-container">
+        <app-file-uploader (calculatedData)="displayRecords($event)"></app-file-uploader>
+    </section>
+    <div class="table-wrapper" *ngIf="errorHeaders">
         <div class="header">Errors in organisational hierarchy</div>
         <div *ngIf="isLoading" class="loading-state">
             Loading...
@@ -12,14 +14,46 @@
         <table class="table-container" *ngIf="!isLoading && !isEmpty">
             <thead class="table-header">
                 <tr>
-                    <th *ngFor="let header of errorHeaders" class="header-cell">{{ header | keyTransform }}</th>
+                    <th *ngFor="let header of errorHeaders" class="header-cell" (click)="toggleSort(header)">
+                        {{ header | keyTransform }}
+                        <span *ngIf="sortedColumn === header">
+                            {{ isAscending ? '↑' : '↓' }}
+                            </span>
+                    </th>
+                    
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let error of errors" class="table-row">
-                    <td *ngFor="let header of errorHeaders" class="table-cell">{{ error[header] }}</td>
+                <tr *ngFor="let error of errors; let i = index" class="table-row">
+                  <td *ngFor="let header of errorHeaders" class="table-cell">
+                    <!-- Check for fullName header and render avatar and name -->
+                    <ng-container *ngIf="header === 'fullName'; else checkRole">
+                      <div class="avatar-cell">
+                        <div class="details">
+                          <div class="avatar">
+                            {{ getInitials(error[header]) }}
+                          </div>
+                          <span class="full-name">{{error[header]}}</span>
+                        </div>
+                      </div>
+                    </ng-container>
+                    
+                    <!-- Check for role header and render chip -->
+                    <ng-template #checkRole>
+                      <ng-container *ngIf="header === 'role'; else normalCell">
+                        <div class="chip" [ngStyle]="getChipStyles(error[header])">
+                          {{ error[header] }}
+                        </div>
+                      </ng-container>
+                    </ng-template>
+              
+                    <!-- Default rendering for other headers -->
+                    <ng-template #normalCell>
+                      {{ error[header] }}
+                    </ng-template>
+                  </td>
                 </tr>
-            </tbody>
-        </table>
+              </tbody>
+        </table> 
     </div>
 </section>

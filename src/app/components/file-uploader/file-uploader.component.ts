@@ -1,4 +1,5 @@
 import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { IUser, IValidationError } from 'src/app/interfaces/userRecord';
 
 @Component({
   selector: 'app-file-uploader',
@@ -8,15 +9,17 @@ import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '
 export class FileUploaderComponent{
   
  @ViewChild('fileInput') fileInput!: ElementRef;
-  records: any[] = [];
-  headers: string[] = [];
+ headers: string[] = [];
+ records: string[][] = [];
+ users: IUser[] = [];
+ errors: any[] = [];
+
   errorMessage: string | null = null;
   progress: number = -1;
   fileReader: FileReader | null = null;
   fileName: string = '';
   totalSize: string = '';
   uploadedSize: string = '';
-  errors : any;
   csvData : any;
 
   @Output() calculatedData = new EventEmitter();
@@ -101,81 +104,153 @@ export class FileUploaderComponent{
 
   parseCSV(csvData: string): void {
     const lines = csvData.split('\n').map(line => line.trim());
+
+    // Parse headers
     this.headers = lines[0].split(',').map(header => header.trim());
-    this.records = lines.slice(1).map(line => line.split(',').map(field => field.trim()));
+
+    // Parse records into user objects
+    this.users = lines.slice(1).map(line => {
+      const [email,name, role,reportsTo] = line.split(',').map(field => field.trim());
+      return {
+        fullName : name,
+        role: role as 'Root' | 'Admin' | 'Manager' | 'Caller',
+        email,
+        reportsTo
+      };
+    });
+   console.log(this.users)
     this.validateHierarchy();
   }
 
   validateHierarchy(): void {
-    const emailIndex = this.headers.indexOf('Email');
-    const roleIndex = this.headers.indexOf('Role');
-    const reportsToIndex = this.headers.indexOf('ReportsTo');
-    const fullNameIndex = this.headers.indexOf('FullName'); // Assuming there's a FullName column
-  
-    const roles: any = {
-      'Root': [],
-      'Admin': [],
-      'Manager': [],
-      'Caller': []
-    };
-  
-    const reportsToMap: { [key: string]: string } = {};
     this.errors = [];
   
-    for (const record of this.records) {
-      const email = record[emailIndex];
-      const role = record[roleIndex];
-      const reportsTo = record[reportsToIndex];
-      const fullName = record[fullNameIndex];
+    const userMap = new Map(this.users.map(user => [user.email, user]));
+    const visited = new Set<string>();
   
-      if (role in roles) {
-        roles[role].push(email);
+    const hasCycle = (email: string, stack: Set<string>): boolean => {
+      if (stack.has(email)) {
+        return true;
+      }
+      if (visited.has(email)) {
+        return false;
       }
   
-      if (reportsTo) {
-        const reportsToEmails = reportsTo.split(';').map((email: string) => email.trim());
-        if (reportsToEmails.length > 1) {
-          this.errors.push({ message: 'User reports to multiple users.', email, role, reportingTo: reportsTo, fullName });
+      visited.add(email);
+      stack.add(email);
+  
+      const parentEmails = userMap.get(email)?.reportsTo?.split(';') ?? [];
+      for (const parentEmail of parentEmails) {
+        if (userMap.has(parentEmail) && hasCycle(parentEmail, stack)) {
+          return true;
         }
-        reportsToMap[email] = reportsToEmails[0];
-      }
-    }
-  
-    for (const email in reportsToMap) {
-      const role = this.getRoleByEmail(email);
-      const reportsTo = reportsToMap[email];
-      const reportsToRole = this.getRoleByEmail(reportsTo);
-      const fullName = this.getFullNameByEmail(email); // Assuming you have a method to get full name by email
-  
-      if (role === 'Admin' && reportsToRole !== 'Root') {
-        this.errors.push({ message: 'Admin must report to Root.', email, role, reportingTo: reportsTo, fullName });
       }
   
-      if (role === 'Manager' && !['Admin', 'Manager'].includes(reportsToRole)) {
-        this.errors.push({ message: 'Manager must report to Admin or another Manager.', email, role, reportingTo: reportsTo, fullName });
+      stack.delete(email);
+      return false;
+    };
+  
+    this.users.forEach(user => {
+      const parents = user.reportsTo?.split(';').filter(parent => parent) || [];
+  
+      // Cycle detection
+      if (hasCycle(user.email, new Set())) {
+        this.errors.push({
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          reportsTo: user.reportsTo,
+          message: `${user.fullName} is involved in a cycle.`,
+        });
+        return;
       }
   
-      if (role === 'Caller' && reportsToRole !== 'Manager') {
-        this.errors.push({ message: 'Caller must report to a Manager.', email, role, reportingTo: reportsTo, fullName });
+      // One-to-One Reporting
+      if (parents.length > 1) {
+        this.errors.push({
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          reportsTo: user.reportsTo,
+          message: `${user.fullName} is reporting to multiple parents (${parents.join(', ')}).`,
+        });
       }
-    }
-
-    this.calculatedData.emit({errors : this.errors , records: this.records , headers:this.headers})
-
-  }
   
-  getFullNameByEmail(email: string): string {
-    const record = this.records.find(record => record[this.headers.indexOf('Email')] === email);
-    return record ? record[this.headers.indexOf('FullName')] : '';
-  }
-
-  getRoleByEmail(email: string): string {
-    for (const record of this.records) {
-      if (record[this.headers.indexOf('Email')] === email) {
-        return record[this.headers.indexOf('Role')];
+      // Validate parent relationships
+      for (const parentEmail of parents) {
+        const parent = userMap.get(parentEmail);
+        if (!parent) {
+          this.errors.push({
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+            reportsTo: user.reportsTo,
+            message: `${user.fullName} (${user.role}) is reporting to a non-existent user (${parentEmail}).`,
+          });
+          continue;
+        }
+  
+        switch (user.role) {
+          case 'Root':
+            this.errors.push({
+              fullName: user.fullName,
+              email: user.email,
+              role: user.role,
+              reportsTo: user.reportsTo,
+              message: `${user.fullName} (Root) should not report to anyone.`,
+            });
+            break;
+  
+          case 'Admin':
+            if (parent.role !== 'Root') {
+              this.errors.push({
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                reportsTo: user.reportsTo,
+                message: `${user.fullName} (Admin) must report to a Root, not ${parent.fullName} (${parent.role}).`,
+              });
+            }
+            break;
+  
+          case 'Manager':
+            if (parent.role !== 'Admin' && parent.role !== 'Manager') {
+              this.errors.push({
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                reportsTo: user.reportsTo,
+                message: `${user.fullName} (Manager) must report to an Admin or another Manager, not ${parent.fullName} (${parent.role}).`,
+              });
+            }
+            break;
+  
+          case 'Caller':
+            if (parent.role !== 'Manager') {
+              this.errors.push({
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                reportsTo: user.reportsTo,
+                message: `${user.fullName} (Caller) must report to a Manager, not ${parent.fullName} (${parent.role}).`,
+              });
+            }
+            break;
+  
+          default:
+            this.errors.push({
+              fullName: user.fullName,
+              email: user.email,
+              role: user.role,
+              reportsTo: user.reportsTo,
+              message: `${user.fullName} has an invalid role (${user.role}).`,
+            });
+        }
       }
-    }
-    return '';
+    });
+  
+    console.log(this.errors);
+    this.calculatedData.emit({ errors: this.errors });
   }
 
   cancelUpload(): void {

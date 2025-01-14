@@ -2,19 +2,22 @@
 @import 'src/style/_variables.scss';
 
 .display-records-container {
-    padding: 1rem;
     background-color: $background-color;
+    height: 100%;
 }
-
+  
 .table-container {
     width: 100%;
     background-color: $white;
     border-collapse: collapse;
     border-color: $primary-header;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+    font-size: 0.8rem;
 }
 
 .table-header {
     color: $primary-header;
+    background: #eaeaf3;
 }
 
 .table-row:last-child {
@@ -25,8 +28,23 @@
     border-bottom: 1px solid $rowborder;
 }
 
+.table-row:nth-child(even) {
+    background-color: #f9f9f9; /* Light gray */
+  }
+  
+  /* Apply background color to odd rows */
+  .table-row:nth-child(odd) {
+    background-color: #ffffff; /* White */
+  }
+  
+  /* Optional: Apply hover effect to rows */
+  .table-row:hover {
+    background-color: #eaeaf3; /* Light blue-gray */
+  }
+
 .table-cell {
-    padding: 1rem;
+    padding: 0.4rem;
+    text-align: center;
 }
 
 
@@ -46,10 +64,52 @@
 }
 
 .header-cell{
-    padding: 1rem
+    padding: 0.8rem;
+    text-wrap: nowrap;
 }
 
 .table-wrapper {
     padding: 1rem;
     background-color: $white;
+    border-top:1px solid #eaeaf1;
 }
+
+.avatar-cell {
+    display: flex;
+    align-items: center;
+
+    .details {
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Space between avatar and name */
+    }
+
+    .avatar {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      color: $primary-header;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      background-color: #eaeaf3;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: 1px solid #8d8dce;
+    }
+
+    .full-name {
+      text-wrap: nowrap;
+    }
+  }
+
+  .landing-page-container{
+    height: 100%;
+    display: flex;
+
+    .landing-page-logo{
+        width: 50vw;
+    }
+  }
